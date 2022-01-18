@@ -213,10 +213,10 @@ Our paper is available on arXiv. Please, use this BibTeX if you would like to ci
 
 ```latex
 @article{estevam:2021
-author = "Estevam, V. and Laroca, R. and Pedrini, H. and Menotti, D.",
-title = "Dense Video Captioning Using Unsupervised Semantic Information",
-journal = "CoRR",
-year = "2021",
-url = "https://arxiv.org/abs/2112.08455"
+author = {Estevam, V. and Laroca, R. and Pedrini, H. and Menotti, D.},
+title = {Dense Video Captioning Using Unsupervised Semantic Information},
+journal = {CoRR},
+year = {2021},
+url = {https://arxiv.org/abs/2112.08455}
 }
 ```
