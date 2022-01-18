@@ -4,33 +4,29 @@
 
 This repository contains an implementation of the GloVe NLP method adapted to visual features as described in the paper ''Dense Video Captioning Using Unsupervised Semantic Information'' [ArXiv link](https://arxiv.org/abs/2112.08455).
 
-Visual GloVe provides a dense representation encoding a co-occurrence similarity estimation with a semantic space in which short video clips with visual similar content are projected near to each other. The figure bellow illustrates this representation.
+Visual GloVe provides a dense representation encoding a co-occurrence similarity estimation with a semantic space in which short video clips with similar visual content are projected near to each other. The figure below illustrates this representation.
 
 ![Examples of visual similarities. (a) Two video frag-ments with about 28 seconds from YouTube (vdBNZf90PLJ0 andvj3QSVhAhDc). They share some visual similar short clips. (b) A 2D t-SNE representation for the whole visual vocabulary. Someshared fragments are highlighted in red.](./images/visualgloveexample.png)
 
 **Figure.** Examples of visual similarities. (a) Two video fragments with about 28 seconds from YouTube (vdBNZf90PLJ0 and vj3QSVhAhDc). They share some visual similar short clips. (b) A 2D t-sne representation for the whole visual vocabulary. Some shared fragments are highlighted in red.
 
-We employ visual glove in replacement of audio signal in the BMT model (see references) to learn an event proposal model for the Dense Video Captioning (DVC) task. Additionally, we concatenate visual glove with i3D features and feed the MDVC model (see references) to genererate captions for each learned proprosals. Using this descriptor, we were able to aquire state-of-the-art performance on DVC taking only visual features (i.e., using single modal method), as shown in following tables.
+We employ Visual GloVe to replace audio signal in the BMT model (see references) to learn an event proposal model for the Dense Video Captioning (DVC) task. Additionally, we concatenate Visual GloVe with i3D features and feed the MDVC model (see references) to generate captions for each learned proposals. Using this descriptor, we achieve state-of-the-art performance on DVC taking only visual features (i.e., using a single modality approach), as shown in the following tables.
 
 
 ![Table2.](./images/table2.png)
 ![Table4.](./images/table4.png)
 
-
-
-
-
-The code was tested on Ubuntu 20.10 with NVIDIA GPU TitanXP. Using another software/hardware might require to adapt conda environment files.
+The code was tested on Ubuntu 20.10 with NVIDIA GPU Titan Xp. Using another software/hardware might require adapting conda environment files.
 
 ## **Visual Glove Computation**
 
-### Step 1: clone this repository.
+### Step 1: clone this repository
 
 ```bash
 git clone --recursive git@github.com:valterlej/visualglove.git
 ```
 
-### Step 2: create the conda environment:
+### Step 2: create the conda environment
 
 ```bash
 conda env create -f ./conda_env.yml
@@ -46,21 +42,22 @@ features (.npy) - https://1drv.ms/u/s!Atd3eVywQZMJgnFmEqYoFg3fq8w9?e=SUOrbE
 
 b. compute your own visual features using the code from https://github.com/v-iashin/video_features . All instructions you need are presented in it.
 
-In our experiments all features and configuration files are saved in a common dataset directory. In our case, we create this darectory in home and refeer using "~/dataset".
+All features and configuration files are saved in a shared dataset directory in our experiments. In our case, we create this directory in 'home' and refer to it using ~/dataset.
 
 ### Step 4: train the model with main.py script
 
 ```bash
 python main.py --procedure training \
+    --train_ids_file ~/dataset/train.json \
     --visual_features_dir ~/dataset/i3d_25fps_stack64step64_2stream_npy \
     --vocabulary_size 1500 \
     --vg_window_size 5 \
     --vg_emb_dim 128
 ```
 
-This command will learn clustering and visual glove models.
+With this command, we learn clustering and visual glove models.
 
-You can extract the cluster predictions using the pre-trained cluster model for all video stacks from *visual_features_dir* with the command (we do not use this information):
+You can extract the cluster predictions using the pre-trained cluster model for all video stacks from *visual_features_dir* with the command:
 
 ```bash
 python main.py --procedure cluster_predictions \
@@ -75,28 +72,22 @@ python main.py --procedure visual_glove_embeddings \
     --output_concatenated_stack_embedding ~/datasets/i3dvisglove_acnet_w5_c1500
 ```
 
-Finally, you can see all parameters with:
-
-```bash
-python main.py --help
-```
-
 ## **Training the Proposal Module**
 
-### Step 1: clone the repository:
+### Step 1: clone the repository
 
 ```git
 git clone --recursive https://github.com/valterlej/CustomBMT.git
 ```
 
-### Step 2: create and activate the conda environment:
+### Step 2: create and activate the conda environment
 
 ```bash
 conda env create -f ./conda_env.yml
 conda activate bmt
 ```
 
-### Step 3: install spacy module
+### Step 3: install the spacy module
 
 ```bash
 python -m spacy download en
@@ -104,7 +95,7 @@ python -m spacy download en
 
 ### Step 4: get or compute the features
 
-You can download all necessary features using the provided links from the Pre-computed features section or you can compute them following the instructions from Visual Glove Computation section.
+You can download all necessary features using the links provided in the 'pre-computed features' section, or you can compute them following the instructions from 'Visual GloVe computation section.
 
 ### Step 5: train the captioning model using CustomBMT (bi-modal transformer)
 
@@ -150,20 +141,20 @@ python main.py --device_ids 0 \
 ## **Training and Evaluating Captioning - CustomMDVC**
 
 
-### Step 1: clone the repository:
+### Step 1: clone the repository
 
 ```git
 git clone https://github.com/valterlej/CustomMDVC.git
 ```
 
-### Step 2: create and activate the conda environment:
+### Step 2: create and activate the conda environment
 
 ```bash
 conda env create -f ./conda_env.yml
 conda activate mdvc
 ```
 
-### Step 3: install spacy module
+### Step 3: install the spacy module
 
 ```bash
 python -m spacy download en
@@ -175,7 +166,7 @@ Skip this step if you are retraining the proposal generation model. Otherwise, d
 
 ### Step 5: train the captioning model with CustomMDVC (vanilla transformer)
 
-Download de file containing our pre-trained BMT proposals [here](https://1drv.ms/u/s!Atd3eVywQZMJgwJFZaaIagGKSHNz?e=HSeVPW) (.zip), in the same format adopt by MDVC. Then, run the following command:
+Download de file containing our pre-trained [BMT proposals](https://1drv.ms/u/s!Atd3eVywQZMJgwJFZaaIagGKSHNz?e=HSeVPW) (.zip) in the same format adopted by MDVC. Then, run the following command:
 
 ```bash
 python main.py --device_ids 0 \
@@ -218,14 +209,14 @@ For the complete list, see the paper.
 
 ## **Citation**
 
-Our paper is available on arXiv. Please, use this bibtex if you would like to cite our work.
+Our paper is available on arXiv. Please, use this BibTeX if you would like to cite our work.
 
 ```latex
-@article{estevam:2021,
-  author = "Valter Luis Estevam Junior and Rayson Laroca and Helio Pedrini and David Menotti",
-  title = "Dense Video Captioning Using Unsupervised Semantic Information",
-  journal= "CoRR",
-  year = "2021",
-  url = "https://arxiv.org/abs/2112.08455"
+@article{estevam:2021
+author = "Estevam, V. and Laroca, R. and Pedrini, H. and Menotti, D.",
+title = "Dense Video Captioning Using Unsupervised Semantic Information",
+journal = "CoRR",
+year = "2021",
+url = "https://arxiv.org/abs/2112.08455"
 }
 ```
