@@ -1,17 +1,30 @@
-# Visual GloVe
+# **Dense Video Captioning Using Unsupervised Semantic Information**
 
-This repository contains an implementation of the GloVe NLP method adapted to visual features as described in the paper ''Dense Video Captioning Using Unsupervised Semantic Information'' [ArXiv link](http://).
+## **Summary**
 
-Visual GloVe provides a dense representation encoding a co-occurrence similarity estimation with a semantic space in which short video clips with visual similar content are projected near to each other. The figure bellow shows this result.
+This repository contains an implementation of the GloVe NLP method adapted to visual features as described in the paper ''Dense Video Captioning Using Unsupervised Semantic Information'' [ArXiv link](https://arxiv.org/abs/2112.08455).
+
+Visual GloVe provides a dense representation encoding a co-occurrence similarity estimation with a semantic space in which short video clips with visual similar content are projected near to each other. The figure bellow illustrates this representation.
 
 ![Examples of visual similarities. (a) Two video frag-ments with about 28 seconds from YouTube (vdBNZf90PLJ0 andvj3QSVhAhDc). They share some visual similar short clips. (b) A 2D t-SNE representation for the whole visual vocabulary. Someshared fragments are highlighted in red.](./images/visualgloveexample.png)
+
+**Figure.** Examples of visual similarities. (a) Two video fragments with about 28 seconds from YouTube (vdBNZf90PLJ0 and vj3QSVhAhDc). They share some visual similar short clips. (b) A 2D t-sne representation for the whole visual vocabulary. Some shared fragments are highlighted in red.
+
+We employ visual glove in replacement of audio signal in the BMT model (see references) to learn an event proposal model for the Dense Video Captioning (DVC) task. Additionally, we concatenate visual glove with i3D features and feed the MDVC model (see references) to genererate captions for each learned proprosals. Using this descriptor, we were able to aquire state-of-the-art performance on DVC taking only visual features (i.e., using single modal method), as shown in following tables.
+
+
+![Table2.](./images/table2.png)
+![Table4.](./images/table4.png)
+
+
+
 
 
 The code was tested on Ubuntu 20.10 with NVIDIA GPU TitanXP. Using another software/hardware might require to adapt conda environment files.
 
-## Instalation
+## **Visual Glove Computation**
 
-### Step 1: clone the repository.
+### Step 1: clone this repository.
 
 ```bash
 git clone --recursive git@github.com:valterlej/visualglove.git
@@ -29,36 +42,37 @@ a. download annotations and visual features from:
 
 annotations (.json) https://cs.stanford.edu/people/ranjaykrishna/densevid/captions.zip
 
-features (.npy) - https://1drv.ms/u/s!Atd3eVywQZMJgkg9BmsUa24DXgKl?e=uz9V65or
+features (.npy) - https://1drv.ms/u/s!Atd3eVywQZMJgnFmEqYoFg3fq8w9?e=SUOrbE
 
-b. compute your own visual features
+b. compute your own visual features using the code from https://github.com/v-iashin/video_features . All instructions you need are presented in it.
 
-We suggest the git repositories:
-
-- original: https://github.com/v-iashin/video_features or
-
-- our fork: https://github.com/valterlej/video_features
-
-All instructions you need are presented in them.
+In our experiments all features and configuration files are saved in a common dataset directory. In our case, we create this darectory in home and refeer using "~/dataset".
 
 ### Step 4: train the model with main.py script
 
 ```bash
-python main.py --procedure training_and_embedding
+python main.py --procedure training \
+    --visual_features_dir ~/dataset/i3d_25fps_stack64step64_2stream_npy \
+    --vocabulary_size 1500 \
+    --vg_window_size 5 \
+    --vg_emb_dim 128
 ```
 
-This command will learn clustering and visual glove models. Additionally, it will produce the embeddings for all video stacks from *visual_features_dir* parameter.
+This command will learn clustering and visual glove models.
 
-You can extract the cluster predictions using the pre-trained cluster model for all video stacks from *visual_features_dir* with the command:
+You can extract the cluster predictions using the pre-trained cluster model for all video stacks from *visual_features_dir* with the command (we do not use this information):
 
 ```bash
-python main.py --procedure cluster_predictions
+python main.py --procedure cluster_predictions \
+    --output_cluster_predictions_dir <directory path>
 ```
 
-You can extract visual embeddings using the cluster and visual glove pre-trained models. The command is:
+Extract visual embeddings using the cluster and visual glove pre-trained models. The command is:
 
 ```bash
-python main.py --procedure visual_glove_embeddings
+python main.py --procedure visual_glove_embeddings \
+    --output_embedding_dir ~/datasets/visglove_acnet_w5_c1500 \
+    --output_concatenated_stack_embedding ~/datasets/i3dvisglove_acnet_w5_c1500
 ```
 
 Finally, you can see all parameters with:
@@ -67,7 +81,151 @@ Finally, you can see all parameters with:
 python main.py --help
 ```
 
-## Using pre-trained models in you project by importing
+## **Training the Proposal Module**
 
-If you desire to incorporate our feature embedder in you project follow the steps.
+### Step 1: clone the repository:
 
+```git
+git clone --recursive https://github.com/valterlej/CustomBMT.git
+```
+
+### Step 2: create and activate the conda environment:
+
+```bash
+conda env create -f ./conda_env.yml
+conda activate bmt
+```
+
+### Step 3: install spacy module
+
+```bash
+python -m spacy download en
+```
+
+### Step 4: get or compute the features
+
+You can download all necessary features using the provided links from the Pre-computed features section or you can compute them following the instructions from Visual Glove Computation section.
+
+### Step 5: train the captioning model using CustomBMT (bi-modal transformer)
+
+Training
+```bash
+python main.py --device_ids 0 \
+    --video_features_path ~/datasets/i3d_25fps_stack64step64_2stream_npy \
+    --audio_features_path ./data/visglove_acnet_w5_c1500 \
+    --procedure train_cap \
+    --epoch_num 100 \
+    --early_stop_after 25 \
+    --dout_p 0.1 \
+    --d_vid 1024 \
+    --d_model 1024 \
+    --d_aud 128
+```
+
+### Step 6: train the event proposal generation module using CustomBMT (bi-modal transformer)
+
+Training
+```bash
+python main.py --device_ids 0 \
+    --video_features_path ~/datasets/i3d_25fps_stack64step64_2stream_npy \
+    --audio_features_path ~/datasets/visglove_acnet_w5_c1500 \
+    --procedure train_prop \
+    --epoch_num 80  \
+    --early_stop_after 20 \
+    --pretrained_cap_model_path ./log/train_cap/1203220645/best_cap_model.pt
+```
+
+
+Evaluating
+```bash
+python main.py --device_ids 0 \
+    --video_features_path ~/datasets/i3d_25fps_stack64step64_2stream_npy \
+    --audio_features_path ~/datasets/visglove_acnet_w5_c1500 \
+    --procedure evaluate \
+    --pretrained_cap_model_path ./log/train_cap/<dataset_log>/best_cap_model.pt \
+    --prop_pred_path ./log/train_prop/<dataset_log>/submissions/<json_submission_file>
+```
+
+
+## **Training and Evaluating Captioning - CustomMDVC**
+
+
+### Step 1: clone the repository:
+
+```git
+git clone https://github.com/valterlej/CustomMDVC.git
+```
+
+### Step 2: create and activate the conda environment:
+
+```bash
+conda env create -f ./conda_env.yml
+conda activate mdvc
+```
+
+### Step 3: install spacy module
+
+```bash
+python -m spacy download en
+```
+
+### Step 4: get or compute the features
+
+Skip this step if you are retraining the proposal generation model. Otherwise, download visual glove features [here](https://1drv.ms/u/s!Atd3eVywQZMJgnIH156XyewdCEuu?e=Mos3hF).
+
+### Step 5: train the captioning model with CustomMDVC (vanilla transformer)
+
+Download de file containing our pre-trained BMT proposals [here](https://1drv.ms/u/s!Atd3eVywQZMJgwJFZaaIagGKSHNz?e=HSeVPW) (.zip), in the same format adopt by MDVC. Then, run the following command:
+
+```bash
+python main.py --device_ids 0 \
+    --d_vid 1152 \
+    --epoch_num 80 \
+    --early_stop_after 20 \
+    --video_features_path ./datasets/i3dvisglove_acnet_w5_c1500 \
+    --model_type visual
+    --val_prop_meta_path ./datasets/bmt_prop_results_val_1_e26_maxprop100_mdvc.csv
+```
+
+## **Pre-computed features**
+
+- [i3D features](https://1drv.ms/u/s!Atd3eVywQZMJgnFmEqYoFg3fq8w9?e=SUOrbE) (64 stack 64 step)
+- [Visual Glove Features](https://1drv.ms/u/s!Atd3eVywQZMJgnIH156XyewdCEuu?e=Mos3hF) (i3d+Visglove and Visglove only)
+- [VGGish features](https://1drv.ms/u/s!Atd3eVywQZMJgnCPED7TKSGH7hmP?e=lOb5aj) (only if you desire to reproduce the MDVC or BMT results)
+
+## **Pre-trained models**
+
+- [Cluster and Visual Glove models](https://1drv.ms/u/s!Atd3eVywQZMJgm82Zcj0exjJTTNH?e=oBMBr6) (trained considering window = 5 clips -- ~10s -- and vocabulary = 1500 clusters)
+- [BMT captioning model](https://1drv.ms/u/s!Atd3eVywQZMJgnRmqWwxtzWM2gKV?e=mCAUb6) - used for training the proposal module
+- [BMT proposal generation model](https://1drv.ms/u/s!Atd3eVywQZMJgnfJoX9YTJ1BMXpK?e=mGaxLT)
+- [MDVC](https://1drv.ms/u/s!Atd3eVywQZMJgnvzADj4p0AVNbxL?e=KPbHFc) - mdvc model trained with the concatenation of i3d and visual glove features.
+
+## **Main References**
+
+Mini-batch k-means
+- Sculley, D. **Web-Scale k-Means Clustering**. In International Conference on World Wide Web, 2010, pp. 1177-1178.
+
+GloVE
+- Pennington, J.; Socher, R.; Manning,  C. D. **GloVe: Global Vectors for Word Representation**. In. Conference on Empirical Methods in Natural Language Processing (EMNLP), 2014, pp. 1532-1543.
+
+MDVC
+- Iashin, V.; Rahtu, E. **Multi-Modal Dense Video Captioning**. In IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops, 2020, pp. 958-959.
+
+BMT
+- Iashin, V.; Rahtu, E. **A Better Use of Audio-Visual Cues: Dense Video Captioning with Bi-modal Transformer**. In. British Machine Vision Conference (BMVC), 2020.
+
+For the complete list, see the paper.
+
+## **Citation**
+
+Our paper is available on arXiv. Please, use this bibtex if you would like to cite our work.
+
+```latex
+@article{estevam:2021,
+  author = "Valter Luis Estevam Junior and Rayson Laroca and Helio Pedrini and David Menotti",
+  title = "Dense Video Captioning Using Unsupervised Semantic Information",
+  journal= "CoRR",
+  year = "2021",
+  url = "https://arxiv.org/abs/2112.08455"
+}
+```

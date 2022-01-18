@@ -118,11 +118,11 @@ class VisualGloveEmbedder():
 def training(cluster, data, n_epochs=1500, batch_size=2048, 
              window_size=25, x_max=20, alpha=0.75, embed_dim=128, 
              max_epochs_lower=80, model_path="./data/visualglove.pt", 
-             plot_loss=False, plot_vocabulary=False):       
+             plot_loss=False, plot_vocabulary=False, vocabulary_size=1000):       
 
     train, _ = predicting_video_clusters(cluster, data, split_rate=1.0)
 
-    dataset = VisualGloveDataset(train, window_size=window_size)
+    dataset = VisualGloveDataset(train, window_size=window_size, vocab_size=vocabulary_size)
     glove = VisualGloveModel(dataset._vocab_len, embed_dim)
     glove.cuda()
 

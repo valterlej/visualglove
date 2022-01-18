@@ -64,7 +64,7 @@ def visual_glove_embeddings(cfg):
         i = i + n_files
 
 
-def training(cfg):
+def training_models(cfg):
 
     train_ids = json.loads(open(cfg.train_ids_file).read())        
 
@@ -99,7 +99,7 @@ def training(cfg):
              batch_size=cfg.vg_batch_size, window_size=cfg.vg_window_size, 
              x_max=cfg.vg_x_max, alpha=cfg.vg_alpha, embed_dim=cfg.vg_emb_dim, 
              max_epochs_lower=cfg.vg_early_stopping, model_path=cfg.vg_file, 
-             plot_loss=True, plot_vocabulary=True)
+             plot_loss=True, plot_vocabulary=True, vocab_size=cfg.vocabulary_size)
 
 
 def main(args):
@@ -108,7 +108,7 @@ def main(args):
     start = time.time()
     cfg = Config(args)
     if cfg.procedure == "training":
-        training(cfg)
+        training_models(cfg)
     elif cfg.procedure == "cluster_predictions":
         cluster_predictions(cfg)
     elif cfg.procedure == "visual_glove_embeddings":
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_concatenated_stack_embedding", type=str, default="./data/i3d_25fps_stack24step24_2stream_npy_semantic_embs_128_w25")
     parser.add_argument("--concatenated_file_extension", type=str, default=".npy")
     parser.add_argument("--use_flow", dest="use_flow", action="store_true", default=False, help="Whether to consider the optical flow estimation to compute the embeddings.")
-    parser.add_argument("--use_flow_in_concatenation", dest="use_flow_in_concatenation", action="store_true", default=True, help="Whether to consider the optical flow estimation to compute the concatenations.")
+    parser.add_argument("--use_flow_in_concatenation", dest="use_flow_in_concatenation", action="store_true", default=False, help="Whether to consider the optical flow estimation to compute the concatenations.")
     parser.add_argument("--c_file", type=str, default="./data/cluster.pkl", help="File containing the mini-batch k-means model.")
     parser.add_argument("--c_epochs", type=int, default=5, help="Number of epochs to training the cluster model.")
     parser.add_argument("--vocabulary_size", type=int, default=1000, help="Number of the visual words.")
@@ -152,3 +152,7 @@ if __name__ == "__main__":
     parser.add_argument('--procedure', type=str, required=True, choices=['training', 'cluster_predictions', 'visual_glove_embeddings'])
     args = parser.parse_args()
     main(args)        
+
+
+# comandos para treinamento
+# python main.py --train_ids_file ~/train_ids.json --visual_features_dir /home/vlejunior/datasets/sk64_sp64/acnet_sk64sp64/ --output_embedding_dir /home/vlejunior/datasets/sk64_sp64_embeddings/visglove_acnet_w5_c100/ --output_concatenated_stack_embedding /home/vlejunior/datasets/sk64_sp64_embeddings/i3dvisglove_acnet_w5_c100/ --vocabulary_size 100 --vg_window_size 5 --c_file ./data/cap_ablation/cluster_w5_c100.pkl --vg_file ./data/cap_ablation/visualglove_w5_c100.pt --procedure training
